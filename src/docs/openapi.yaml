@@ -1,0 +1,276 @@
+openapi: 3.0.3
+info:
+  title: API de Usuários e Autenticação
+  version: 1.0.0
+  description: Projeto de extensão educativo para gerenciar usuários e autenticação JWT (assinatura e criptografia de token).
+servers:
+  - url: http://localhost:{port}
+    variables:
+      port:
+        default: 3000
+paths:
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Listar todos os usuários
+      responses:
+        '200':
+          description: Lista de usuários
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Lista de usuários registrados
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ResponseUser'
+    post:
+      tags:
+        - Users
+      summary: Criar novo usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserDTO'
+      responses:
+        '201':
+          description: Usuário criado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Usuário criado com sucesso
+                  data:
+                    $ref: '#/components/schemas/ResponseUser'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Email já registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Obter usuário por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID do usuário
+      responses:
+        '200':
+          description: Usuário encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Usuário encontrado
+                  data:
+                    $ref: '#/components/schemas/ResponseUser'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Users
+      summary: Deletar usuário por ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Usuário deletado
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /login:
+    post:
+      tags:
+        - Auth
+      summary: Autenticar usuário e gerar token JWT criptografado/assinado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginAuthDTO'
+      responses:
+        '200':
+          description: Autenticação bem-sucedida
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Usuário logado com sucesso.
+                  data:
+                    $ref: '#/components/schemas/ResponseAuth'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /validate:
+    post:
+      tags:
+        - Auth
+      summary: Validar token JWT criptografado e assinado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateAuthDTO'
+      responses:
+        '200':
+          description: Token válido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Token está válido
+                  data:
+                    $ref: '#/components/schemas/ResponseAuthDebug'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+components:
+  responses:
+    BadRequest:
+      description: Requisição inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Não autorizado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    CreateUserDTO:
+      type: object
+      properties:
+        user_email:
+          type: string
+          format: email
+          example: user@example.com
+        user_pwd:
+          type: string
+          format: password
+          example: senha123
+      required:
+        - user_email
+        - user_pwd
+    LoginAuthDTO:
+      type: object
+      properties:
+        user_email:
+          type: string
+          format: email
+          example: user@example.com
+        user_pwd:
+          type: string
+          format: password
+          example: senha123
+      required:
+        - user_email
+        - user_pwd
+    ValidateAuthDTO:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+      required:
+        - token
+    ResponseUser:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          example: 1
+        user_email:
+          type: string
+          example: user@example.com
+    ResponseAuth:
+      type: object
+      properties:
+        acess_token:
+          type: string
+          example: eyJhbGciOiJSUzI1NiIsImtpZCI6IkpXVCJ9...
+        token_type:
+          type: string
+          example: Bearer
+    ResponseAuthDebug:
+      type: object
+      properties:
+        orignal_token:
+          type: string
+          example: eyJhbGciOiJSUzI1NiIsImtpZCI6IkpXVCJ9...
+        token_payload:
+          type: object
+          properties:
+            user:
+              type: string
+              example: user@example.com
+            userPwdHash:
+              type: string
+              example: '$2b$10$abcdefghijklmnopqrstuv'
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Erro de validação
+        statusCode:
+          type: integer
+          example: 400
+        errors:
+          type: array
+          items:
+            type: string
+          example:
+            - Email inválido ou ausente
+            - Senha inválida
+          type: array
+          items:
+            type: string
+            example: Email inválido ou ausente
